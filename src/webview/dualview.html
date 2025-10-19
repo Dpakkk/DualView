@@ -29,7 +29,7 @@
       <div class="panel-header">
         <span class="device-icon">📱</span>
         <span class="device-name">iPhone 14 Pro Max</span>
-        <span class="dimensions" id="mobileDimensions">430 × 932</span>
+        <span class="dimensions" id="mobileDimensions">375 × 667</span>
       </div>
       <div class="frame-wrapper" id="mobileWrapper">
         <iframe id="mobileFrame" class="preview-frame"></iframe>
@@ -40,7 +40,7 @@
       <div class="panel-header">
         <span class="device-icon">💻</span>
         <span class="device-name">MacBook 13"</span>
-        <span class="dimensions" id="desktopDimensions">1440 × 900</span>
+        <span class="dimensions" id="desktopDimensions">1200 × 750</span>
       </div>
       <div class="frame-wrapper" id="desktopWrapper">
         <iframe id="desktopFrame" class="preview-frame"></iframe>
@@ -135,19 +135,20 @@
 
     .container {
       flex: 1;
-      display: grid;
-      grid-template-columns: auto 1fr;
+      display: flex;
+      flex-direction: row;
       gap: 20px;
       padding: 20px;
       overflow: auto;
-      align-items: start;
-      justify-items: center;
+      align-items: flex-start;
+      justify-content: center;
     }
 
     .panel {
       display: flex;
       flex-direction: column;
       gap: 12px;
+      flex-shrink: 0;
     }
 
     .panel-header {
@@ -181,6 +182,7 @@
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
       overflow: hidden;
       transition: all 0.3s ease;
+      transform-origin: top left;
     }
 
     .preview-frame {
@@ -190,40 +192,33 @@
     }
 
     #mobileWrapper {
-      width: 430px;
-      height: 932px;
+      width: 375px;
+      height: 667px;
     }
 
     #mobileFrame {
-      width: 430px;
-      height: 932px;
+      width: 375px;
+      height: 667px;
     }
 
     #desktopWrapper {
-      width: 1440px;
-      height: 900px;
+      width: 1200px;
+      height: 750px;
     }
 
     #desktopFrame {
-      width: 1440px;
-      height: 900px;
+      width: 1200px;
+      height: 750px;
     }
 
     .mobile-panel.rotated #mobileWrapper {
-      width: 932px;
-      height: 430px;
+      width: 667px;
+      height: 375px;
     }
 
     .mobile-panel.rotated #mobileFrame {
-      width: 932px;
-      height: 430px;
-    }
-
-    @media (max-width: 1800px) {
-      .container {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto;
-      }
+      width: 667px;
+      height: 375px;
     }
 
     .waiting-message {
@@ -268,8 +263,8 @@
 
       let isRotated = false;
       let currentUrl = '';
-      let mobileSize = { width: 430, height: 932 };
-      let desktopSize = { width: 1440, height: 900 };
+      let mobileSize = { width: 375, height: 667 };
+      let desktopSize = { width: 1200, height: 750 };
 
       // Handle URL input
       urlInput.addEventListener('keypress', (e) => {
