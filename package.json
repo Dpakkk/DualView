@@ -1,13 +1,24 @@
 {
   "name": "dualview",
-  "displayName": "DualView",
-  "description": "VS Code extension with dual view functionality",
-  "version": "0.0.1",
+  "displayName": "DualView Live Preview",
+  "description": "Auto-detect dev servers and preview mobile + desktop views simultaneously with Clerk authentication",
+  "version": "0.1.0",
+  "publisher": "dualview",
+  "icon": "media/icon.svg",
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Debuggers",
+    "Visualization"
+  ],
+  "keywords": [
+    "preview",
+    "live",
+    "mobile",
+    "responsive",
+    "development"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -16,8 +27,21 @@
   "contributes": {
     "commands": [
       {
-        "command": "dualview.open",
-        "title": "DualView: Open"
+        "command": "dualview.openPreview",
+        "title": "DualView: Open Preview",
+        "icon": "$(device-mobile)"
+      },
+      {
+        "command": "dualview.attachUrl",
+        "title": "DualView: Attach to URL"
+      },
+      {
+        "command": "dualview.serveFolder",
+        "title": "DualView: Serve Current Folder"
+      },
+      {
+        "command": "dualview.openLast",
+        "title": "DualView: Open Last Preview"
       },
       {
         "command": "dualview.logout",
@@ -25,12 +49,55 @@
       }
     ],
     "configuration": {
-      "title": "DualView",
+      "title": "DualView Live Preview",
       "properties": {
         "dualview.clerkPublishableKey": {
           "type": "string",
           "default": "",
-          "description": "Clerk Publishable Key (pk_...)"
+          "description": "Clerk Publishable Key (pk_test_... or pk_live_...)",
+          "order": 0
+        },
+        "dualview.autoOpenOnUrl": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open DualView when a dev server URL is detected in terminal",
+          "order": 1
+        },
+        "dualview.autoOpenOnProbe": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically probe common ports and open DualView when a server is found",
+          "order": 2
+        },
+        "dualview.probe.ports": {
+          "type": "array",
+          "default": [5173, 3000, 8080, 4200, 5000, 5500, 8000, 8001, 4000, 9000],
+          "description": "Ports to probe for auto-detection",
+          "order": 3
+        },
+        "dualview.mobileSize": {
+          "type": "string",
+          "default": "430x932",
+          "description": "Mobile viewport size (widthxheight)",
+          "order": 4
+        },
+        "dualview.desktopSize": {
+          "type": "string",
+          "default": "1440x900",
+          "description": "Desktop viewport size (widthxheight)",
+          "order": 5
+        },
+        "dualview.popout.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable pop-out in browser feature",
+          "order": 6
+        },
+        "dualview.popout.port": {
+          "type": "number",
+          "default": 7777,
+          "description": "Preferred port for pop-out server (will auto-increment if busy)",
+          "order": 7
         }
       }
     }
@@ -41,16 +108,23 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "@types/node": "^20.x",
+    "@types/serve-static": "^1.15.5",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
     "eslint": "^8.56.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "@vscode/vsce": "^2.22.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "serve-static": "^1.15.0",
+    "get-port": "^7.0.0"
+  }
 }
 

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; connect-src https://*.clerk.accounts.dev https://*.clerk.com; img-src https: data:;">
+  <title>Sign In - DualView</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--vscode-editor-background);
+      color: var(--vscode-editor-foreground);
+      padding: 20px;
+    }
+
+    .auth-container {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .header {
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--vscode-descriptionForeground);
+      font-size: 14px;
+    }
+
+    #clerk-sign-in {
+      width: 100%;
+    }
+
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--vscode-button-background);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      color: var(--vscode-errorForeground);
+      background: var(--vscode-inputValidation-errorBackground);
+      border: 1px solid var(--vscode-inputValidation-errorBorder);
+      padding: 16px;
+      border-radius: 6px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .config-error {
+      max-width: 600px;
+      padding: 30px;
+      background: var(--vscode-input-background);
+      border: 1px solid var(--vscode-panel-border);
+      border-radius: 8px;
+    }
+
+    .config-error h2 {
+      color: var(--vscode-errorForeground);
+      margin-bottom: 16px;
+    }
+
+    .config-error p {
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .config-error ol {
+      margin-left: 20px;
+      margin-top: 12px;
+    }
+
+    .config-error li {
+      margin-bottom: 8px;
+    }
+
+    .config-error code {
+      background: var(--vscode-textCodeBlock-background);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-container" id="authContainer">
+    <div class="header">
+      <div class="logo">📱💻</div>
+      <h1>Welcome to DualView</h1>
+      <p>Sign in to continue</p>
+    </div>
+    <div id="clerk-sign-in">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading authentication...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+  <script>
+    (function() {
+      const vscode = acquireVsCodeApi();
+
+      async function initializeClerk() {
+        const clerkPublishableKey = 'CLERK_PUBLISHABLE_KEY_PLACEHOLDER';
+        
+        // Check if key is configured
+        if (!clerkPublishableKey || !clerkPublishableKey.startsWith('pk_')) {
+          showConfigError();
+          return;
+        }
+
+        try {
+          const clerk = window.Clerk;
+          await clerk.load({ publishableKey: clerkPublishableKey });
+
+          // Check if already signed in
+          if (clerk.user) {
+            handleAuthSuccess(clerk);
+            return;
+          }
+
+          // Mount sign-in component
+          const signInDiv = document.getElementById('clerk-sign-in');
+          signInDiv.innerHTML = '';
+          
+          clerk.mountSignIn(signInDiv);
+
+          // Listen for authentication events
+          clerk.addListener((resources) => {
+            if (resources.user && resources.session) {
+              handleAuthSuccess(clerk);
+            }
+          });
+
+        } catch (error) {
+          console.error('Clerk initialization error:', error);
+          document.getElementById('clerk-sign-in').innerHTML = 
+            '<div class="error"><strong>Authentication Error</strong><br>' + 
+            error.message + '</div>';
+          vscode.postMessage({ command: 'authError', error: error.message });
+        }
+      }
+
+      function handleAuthSuccess(clerk) {
+        const session = clerk.session;
+        const user = clerk.user;
+        
+        vscode.postMessage({
+          command: 'authSuccess',
+          session: {
+            id: session.id,
+            token: session.lastActiveToken.jwt
+          },
+          user: {
+            id: user.id,
+            email: user.primaryEmailAddress?.emailAddress,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            imageUrl: user.imageUrl
+          }
+        });
+      }
+
+      function showConfigError() {
+        document.getElementById('authContainer').innerHTML = `
+          <div class="config-error">
+            <h2>⚠️ Configuration Required</h2>
+            <p>DualView requires a Clerk Publishable Key to enable authentication.</p>
+            
+            <h3>Setup Steps:</h3>
+            <ol>
+              <li>Go to <a href="https://dashboard.clerk.com">Clerk Dashboard</a></li>
+              <li>Create a new application or select an existing one</li>
+              <li>Navigate to <strong>API Keys</strong></li>
+              <li>Copy your <strong>Publishable Key</strong> (starts with <code>pk_</code>)</li>
+              <li>Open VS Code settings (Cmd/Ctrl + ,)</li>
+              <li>Search for "DualView"</li>
+              <li>Paste your key into <code>dualview.clerkPublishableKey</code></li>
+            </ol>
+
+            <p style="margin-top: 20px;">After configuration, reload this window.</p>
+          </div>
+        `;
+        
+        vscode.postMessage({ command: 'authError', error: 'Clerk key not configured' });
+      }
+
+      // Initialize when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeClerk);
+      } else {
+        initializeClerk();
+      }
+    })();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; frame-src http://localhost:* http://127.0.0.1:* https://localhost:* https://127.0.0.1:*; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src http://localhost:* http://127.0.0.1:* https://localhost:* https://127.0.0.1:*;">
+  <title>DualView Live Preview</title>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="url-section">
+      <input type="text" id="urlInput" class="url-input" placeholder="http://localhost:3000" />
+    </div>
+    <div class="actions">
+      <button id="reloadBtn" class="btn btn-primary" title="Reload both frames">
+        <span class="icon">🔄</span> Reload
+      </button>
+      <button id="rotateBtn" class="btn" title="Rotate mobile device">
+        <span class="icon">📱</span> Rotate
+      </button>
+      <button id="popoutBtn" class="btn" title="Open in browser">
+        <span class="icon">🌐</span> Pop Out
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel mobile-panel">
+      <div class="panel-header">
+        <span class="device-icon">📱</span>
+        <span class="device-name">iPhone 14 Pro Max</span>
+        <span class="dimensions" id="mobileDimensions">430 × 932</span>
+      </div>
+      <div class="frame-wrapper" id="mobileWrapper">
+        <iframe id="mobileFrame" class="preview-frame"></iframe>
+      </div>
+    </div>
+
+    <div class="panel desktop-panel">
+      <div class="panel-header">
+        <span class="device-icon">💻</span>
+        <span class="device-name">MacBook 13"</span>
+        <span class="dimensions" id="desktopDimensions">1440 × 900</span>
+      </div>
+      <div class="frame-wrapper" id="desktopWrapper">
+        <iframe id="desktopFrame" class="preview-frame"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--vscode-editor-background);
+      color: var(--vscode-editor-foreground);
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--vscode-titleBar-activeBackground);
+      border-bottom: 1px solid var(--vscode-panel-border);
+      flex-shrink: 0;
+    }
+
+    .url-section {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--vscode-input-background);
+      color: var(--vscode-input-foreground);
+      border: 1px solid var(--vscode-input-border);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    }
+
+    .url-input:focus {
+      outline: 1px solid var(--vscode-focusBorder);
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      background: var(--vscode-button-secondaryBackground);
+      color: var(--vscode-button-secondaryForeground);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+
+    .btn:hover {
+      background: var(--vscode-button-secondaryHoverBackground);
+    }
+
+    .btn-primary {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+    }
+
+    .btn-primary:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
+
+    .icon {
+      font-size: 14px;
+    }
+
+    .container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+      padding: 20px;
+      overflow: auto;
+      align-items: start;
+      justify-items: center;
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--vscode-input-background);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    .device-icon {
+      font-size: 16px;
+    }
+
+    .device-name {
+      font-weight: 600;
+    }
+
+    .dimensions {
+      margin-left: auto;
+      color: var(--vscode-descriptionForeground);
+      font-size: 11px;
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .frame-wrapper {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .preview-frame {
+      border: none;
+      display: block;
+      background: #fff;
+    }
+
+    #mobileWrapper {
+      width: 430px;
+      height: 932px;
+    }
+
+    #mobileFrame {
+      width: 430px;
+      height: 932px;
+    }
+
+    #desktopWrapper {
+      width: 1440px;
+      height: 900px;
+    }
+
+    #desktopFrame {
+      width: 1440px;
+      height: 900px;
+    }
+
+    .mobile-panel.rotated #mobileWrapper {
+      width: 932px;
+      height: 430px;
+    }
+
+    .mobile-panel.rotated #mobileFrame {
+      width: 932px;
+      height: 430px;
+    }
+
+    @media (max-width: 1800px) {
+      .container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+      }
+    }
+
+    .waiting-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 60px;
+      text-align: center;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    .waiting-message .icon {
+      font-size: 48px;
+    }
+
+    .waiting-message h2 {
+      font-size: 18px;
+      color: var(--vscode-editor-foreground);
+    }
+
+    .waiting-message p {
+      font-size: 13px;
+      line-height: 1.6;
+    }
+  </style>
+
+  <script>
+    (function() {
+      const vscode = acquireVsCodeApi();
+      
+      // Get DOM elements
+      const urlInput = document.getElementById('urlInput');
+      const mobileFrame = document.getElementById('mobileFrame');
+      const desktopFrame = document.getElementById('desktopFrame');
+      const reloadBtn = document.getElementById('reloadBtn');
+      const rotateBtn = document.getElementById('rotateBtn');
+      const popoutBtn = document.getElementById('popoutBtn');
+      const mobilePanel = document.querySelector('.mobile-panel');
+      const mobileDimensions = document.getElementById('mobileDimensions');
+
+      let isRotated = false;
+      let currentUrl = '';
+      let mobileSize = { width: 430, height: 932 };
+      let desktopSize = { width: 1440, height: 900 };
+
+      // Handle URL input
+      urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const url = urlInput.value.trim();
+          if (url) {
+            loadUrl(url);
+            vscode.postMessage({ command: 'urlChanged', url });
+          }
+        }
+      });
+
+      // Reload button
+      reloadBtn.addEventListener('click', () => {
+        if (currentUrl) {
+          mobileFrame.src = mobileFrame.src;
+          desktopFrame.src = desktopFrame.src;
+          vscode.postMessage({ command: 'reload' });
+        }
+      });
+
+      // Rotate button
+      rotateBtn.addEventListener('click', () => {
+        isRotated = !isRotated;
+        mobilePanel.classList.toggle('rotated', isRotated);
+        
+        if (isRotated) {
+          mobileDimensions.textContent = `${mobileSize.height} × ${mobileSize.width}`;
+        } else {
+          mobileDimensions.textContent = `${mobileSize.width} × ${mobileSize.height}`;
+        }
+        
+        vscode.postMessage({ command: 'rotate', isRotated });
+      });
+
+      // Pop-out button
+      popoutBtn.addEventListener('click', () => {
+        if (currentUrl) {
+          vscode.postMessage({ command: 'popout', url: currentUrl });
+        }
+      });
+
+      // Load URL into frames
+      function loadUrl(url) {
+        currentUrl = url;
+        urlInput.value = url;
+        mobileFrame.src = url;
+        desktopFrame.src = url;
+      }
+
+      // Update viewport sizes
+      function updateSizes(mobile, desktop) {
+        mobileSize = mobile;
+        desktopSize = desktop;
+
+        const mobileWrapper = document.getElementById('mobileWrapper');
+        const desktopWrapper = document.getElementById('desktopWrapper');
+
+        mobileWrapper.style.width = `${mobile.width}px`;
+        mobileWrapper.style.height = `${mobile.height}px`;
+        mobileFrame.style.width = `${mobile.width}px`;
+        mobileFrame.style.height = `${mobile.height}px`;
+
+        desktopWrapper.style.width = `${desktop.width}px`;
+        desktopWrapper.style.height = `${desktop.height}px`;
+        desktopFrame.style.width = `${desktop.width}px`;
+        desktopFrame.style.height = `${desktop.height}px`;
+
+        mobileDimensions.textContent = `${mobile.width} × ${mobile.height}`;
+        document.getElementById('desktopDimensions').textContent = `${desktop.width} × ${desktop.height}`;
+      }
+
+      // Listen for messages from extension
+      window.addEventListener('message', (event) => {
+        const message = event.data;
+        
+        switch (message.command) {
+          case 'loadUrl':
+            loadUrl(message.url);
+            break;
+          case 'reload':
+            mobileFrame.src = mobileFrame.src;
+            desktopFrame.src = desktopFrame.src;
+            break;
+          case 'updateSizes':
+            updateSizes(message.mobile, message.desktop);
+            break;
+        }
+      });
+
+      // Notify extension that webview is ready
+      vscode.postMessage({ command: 'ready' });
+
+      console.log('DualView webview initialized');
+    })();
+  </script>
+</body>
+</html>
+
