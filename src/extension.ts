@@ -1,12 +1,13 @@
 import * as vscode from 'vscode';
 import { PreviewPanel } from './webview/previewPanel';
 import { ServerDetector } from './detector';
-import { StaticServer } from './server';
+import { StaticServer, ProxyServer } from './server';
 import { isValidUrl } from './util';
 
 let detector: ServerDetector;
 let statusBarItem: vscode.StatusBarItem;
 let staticServer: StaticServer | undefined;
+let proxyServer: ProxyServer | undefined;
 let extensionContext: vscode.ExtensionContext;
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -15,6 +16,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Store context globally
     extensionContext = context;
+
+    // Initialize proxy server
+    proxyServer = new ProxyServer();
 
     // Initialize server detector
     detector = new ServerDetector(context);
@@ -33,7 +37,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // Dispose on deactivation
     context.subscriptions.push(
       detector,
-      { dispose: () => staticServer?.stop() }
+      { dispose: () => staticServer?.stop() },
+      { dispose: () => proxyServer?.stop() }
     );
 
     // Start server detection immediately
@@ -211,13 +216,24 @@ async function serveCurrentFolder() {
   }
 }
 
-function openPreview(url: string) {
-  PreviewPanel.createOrShow(extensionContext, url);
-  statusBarItem.text = `$(device-mobile) DualView: ${new URL(url).port}`;
+async function openPreview(url: string) {
+  try {
+    // Start proxy server to strip X-Frame-Options header
+    const proxyUrl = await proxyServer!.start(url);
+    console.log(`DualView: Proxying ${url} through ${proxyUrl}`);
+    
+    // Open preview with proxy URL
+    PreviewPanel.createOrShow(extensionContext, proxyUrl);
+    statusBarItem.text = `$(device-mobile) DualView: ${new URL(url).port}`;
+  } catch (error) {
+    console.error('Failed to start proxy:', error);
+    vscode.window.showErrorMessage(`Failed to start DualView proxy: ${error}`);
+  }
 }
 
 export function deactivate() {
   detector?.stopDetection();
   staticServer?.stop();
+  proxyServer?.stop();
   console.log('DualView Live Preview extension deactivated');
 }

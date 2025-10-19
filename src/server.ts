@@ -1,8 +1,116 @@
 import * as http from 'http';
+import * as https from 'https';
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import getPort from 'get-port';
+
+export class ProxyServer {
+  private server: http.Server | null = null;
+  private port: number = 0;
+  private targetUrl: string = '';
+
+  async start(targetUrl: string): Promise<string> {
+    if (this.server && this.targetUrl === targetUrl) {
+      return `http://localhost:${this.port}`;
+    }
+
+    // Stop existing server if running
+    if (this.server) {
+      await this.stop();
+    }
+
+    this.targetUrl = targetUrl;
+    this.port = await getPort({ port: 8888 });
+
+    return new Promise((resolve, reject) => {
+      this.server = http.createServer((req, res) => {
+        this.proxyRequest(req, res);
+      });
+
+      this.server.listen(this.port, () => {
+        const proxyUrl = `http://localhost:${this.port}`;
+        console.log(`DualView proxy running on ${proxyUrl} -> ${targetUrl}`);
+        resolve(proxyUrl);
+      });
+
+      this.server.on('error', reject);
+    });
+  }
+
+  private proxyRequest(clientReq: http.IncomingMessage, clientRes: http.ServerResponse) {
+    const targetUrl = new URL(this.targetUrl);
+    const targetPath = clientReq.url || '/';
+    
+    // Build proxy request options
+    const headers: http.OutgoingHttpHeaders = { ...clientReq.headers };
+    delete headers['host'];
+    
+    const options: http.RequestOptions = {
+      hostname: targetUrl.hostname,
+      port: targetUrl.port || (targetUrl.protocol === 'https:' ? 443 : 80),
+      path: targetPath,
+      method: clientReq.method,
+      headers: headers
+    };
+
+    const protocol = targetUrl.protocol === 'https:' ? https : http;
+
+    const proxyReq = protocol.request(options, (proxyRes) => {
+      // Filter out problematic headers
+      const headers: any = {};
+      Object.keys(proxyRes.headers).forEach(key => {
+        const lowerKey = key.toLowerCase();
+        // Strip headers that prevent iframe embedding
+        if (
+          lowerKey !== 'x-frame-options' &&
+          lowerKey !== 'content-security-policy' &&
+          lowerKey !== 'content-security-policy-report-only'
+        ) {
+          headers[key] = proxyRes.headers[key];
+        }
+      });
+
+      // Set CORS headers to allow embedding
+      headers['Access-Control-Allow-Origin'] = '*';
+      headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+      headers['Access-Control-Allow-Headers'] = '*';
+
+      clientRes.writeHead(proxyRes.statusCode || 200, headers);
+      proxyRes.pipe(clientRes);
+    });
+
+    proxyReq.on('error', (err) => {
+      console.error('Proxy request error:', err);
+      clientRes.writeHead(502, { 'Content-Type': 'text/plain' });
+      clientRes.end('Bad Gateway: Unable to reach target server');
+    });
+
+    // Handle request body
+    clientReq.pipe(proxyReq);
+  }
+
+  async stop() {
+    if (this.server) {
+      return new Promise<void>((resolve) => {
+        this.server!.close(() => {
+          this.server = null;
+          this.port = 0;
+          this.targetUrl = '';
+          resolve();
+        });
+      });
+    }
+  }
+
+  isRunning(): boolean {
+    return this.server !== null;
+  }
+
+  getPort(): number {
+    return this.port;
+  }
+}
 
 export class PopoutServer {
   private server: http.Server | null = null;
