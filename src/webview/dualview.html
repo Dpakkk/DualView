@@ -10,6 +10,7 @@
   <div class="toolbar">
     <div class="url-section">
       <input type="text" id="urlInput" class="url-input" placeholder="http://localhost:3000" />
+      <span class="hint">Click inactive view or press Tab to switch • Press 1/2 for Mobile/Desktop</span>
     </div>
     <div class="actions">
       <button id="reloadBtn" class="btn btn-primary" title="Reload both frames">
@@ -25,22 +26,24 @@
   </div>
 
   <div class="container">
-    <div class="panel mobile-panel">
+    <div class="panel mobile-panel active" id="mobilePanel">
       <div class="panel-header">
         <span class="device-icon">📱</span>
         <span class="device-name">iPhone 14 Pro Max</span>
         <span class="dimensions" id="mobileDimensions">375 × 667</span>
+        <span class="active-badge">Active</span>
       </div>
       <div class="frame-wrapper" id="mobileWrapper">
         <iframe id="mobileFrame" class="preview-frame"></iframe>
       </div>
     </div>
 
-    <div class="panel desktop-panel">
+    <div class="panel desktop-panel inactive" id="desktopPanel">
       <div class="panel-header">
         <span class="device-icon">💻</span>
         <span class="device-name">MacBook 13"</span>
         <span class="dimensions" id="desktopDimensions">1200 × 750</span>
+        <span class="active-badge">Active</span>
       </div>
       <div class="frame-wrapper" id="desktopWrapper">
         <iframe id="desktopFrame" class="preview-frame"></iframe>
@@ -79,7 +82,7 @@
       flex: 1;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 12px;
     }
 
     .url-input {
@@ -95,6 +98,13 @@
 
     .url-input:focus {
       outline: 1px solid var(--vscode-focusBorder);
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground);
+      white-space: nowrap;
+      opacity: 0.7;
     }
 
     .actions {
@@ -135,20 +145,38 @@
 
     .container {
       flex: 1;
+      position: relative;
+      overflow: hidden;
       display: flex;
-      flex-direction: row;
-      gap: 20px;
-      padding: 20px;
-      overflow: auto;
-      align-items: flex-start;
+      align-items: center;
       justify-content: center;
+      padding: 20px;
     }
 
     .panel {
+      position: absolute;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      flex-shrink: 0;
+      transition: opacity 0.3s ease, filter 0.3s ease;
+      cursor: pointer;
+    }
+
+    .panel.inactive {
+      opacity: 0.15;
+      pointer-events: none;
+      filter: blur(2px);
+    }
+
+    .panel.active {
+      opacity: 1;
+      pointer-events: all;
+      filter: none;
+      z-index: 10;
+    }
+
+    .panel.inactive .frame-wrapper {
+      pointer-events: none;
     }
 
     .panel-header {
@@ -159,6 +187,38 @@
       background: var(--vscode-input-background);
       border-radius: 6px;
       font-size: 13px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .panel.active .panel-header {
+      background: var(--vscode-button-background);
+      color: var(--vscode-button-foreground);
+      box-shadow: 0 0 20px rgba(14, 99, 156, 0.5);
+    }
+
+    .panel.inactive .panel-header {
+      opacity: 0.5;
+    }
+
+    .active-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .panel.active .active-badge {
+      opacity: 1;
     }
 
     .device-icon {
@@ -183,6 +243,10 @@
       overflow: hidden;
       transition: all 0.3s ease;
       transform-origin: top left;
+    }
+
+    .panel.active .frame-wrapper {
+      box-shadow: 0 8px 40px rgba(14, 99, 156, 0.4), 0 0 0 2px rgba(14, 99, 156, 0.3);
     }
 
     .preview-frame {
@@ -258,13 +322,63 @@
       const reloadBtn = document.getElementById('reloadBtn');
       const rotateBtn = document.getElementById('rotateBtn');
       const popoutBtn = document.getElementById('popoutBtn');
-      const mobilePanel = document.querySelector('.mobile-panel');
+      const mobilePanel = document.getElementById('mobilePanel');
+      const desktopPanel = document.getElementById('desktopPanel');
       const mobileDimensions = document.getElementById('mobileDimensions');
 
       let isRotated = false;
       let currentUrl = '';
       let mobileSize = { width: 375, height: 667 };
       let desktopSize = { width: 1200, height: 750 };
+      let activeView = 'mobile'; // 'mobile' or 'desktop'
+
+      // Switch between views
+      function switchView(view) {
+        if (view === activeView) return;
+        
+        activeView = view;
+        
+        if (view === 'mobile') {
+          mobilePanel.classList.remove('inactive');
+          mobilePanel.classList.add('active');
+          desktopPanel.classList.remove('active');
+          desktopPanel.classList.add('inactive');
+        } else {
+          desktopPanel.classList.remove('inactive');
+          desktopPanel.classList.add('active');
+          mobilePanel.classList.remove('active');
+          mobilePanel.classList.add('inactive');
+        }
+      }
+
+      // Click on inactive panel to activate it
+      mobilePanel.addEventListener('click', () => {
+        if (activeView !== 'mobile') {
+          switchView('mobile');
+        }
+      });
+
+      desktopPanel.addEventListener('click', () => {
+        if (activeView !== 'desktop') {
+          switchView('desktop');
+        }
+      });
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Tab or Space to toggle
+        if (e.key === 'Tab' && !e.shiftKey) {
+          e.preventDefault();
+          switchView(activeView === 'mobile' ? 'desktop' : 'mobile');
+        }
+        // 1 for mobile, 2 for desktop
+        if (e.key === '1') {
+          switchView('mobile');
+        }
+        if (e.key === '2') {
+          switchView('desktop');
+        }
+      });
 
       // Handle URL input
       urlInput.addEventListener('keypress', (e) => {
