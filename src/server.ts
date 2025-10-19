@@ -228,18 +228,41 @@ export class PopoutServer {
 
     .container {
       flex: 1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 20px;
-      overflow: auto;
     }
 
     .panel {
+      position: absolute;
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 12px;
+      transition: opacity 0.3s ease, filter 0.3s ease;
+      cursor: pointer;
+    }
+
+    .panel.inactive {
+      opacity: 0.15;
+      filter: blur(2px);
+      z-index: 1;
+    }
+
+    .panel.active {
+      opacity: 1;
+      filter: none;
+      z-index: 10;
+    }
+
+    .panel.inactive .frame-wrapper {
+      pointer-events: none;
+    }
+
+    .panel.active .frame-wrapper {
+      pointer-events: all;
     }
 
     .panel-label {
@@ -247,6 +270,36 @@ export class PopoutServer {
       color: #999;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      padding: 8px 12px;
+      background: #2d2d2d;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .panel.active .panel-label {
+      background: #0e639c;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(14, 99, 156, 0.5);
+    }
+
+    .active-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #4CAF50;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .panel.active .active-badge {
+      opacity: 1;
     }
 
     .frame-wrapper {
@@ -254,6 +307,11 @@ export class PopoutServer {
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .panel.active .frame-wrapper {
+      box-shadow: 0 8px 40px rgba(14, 99, 156, 0.4), 0 0 0 2px rgba(14, 99, 156, 0.3);
     }
 
     iframe {
@@ -270,31 +328,32 @@ export class PopoutServer {
       width: ${desktopWidth}px;
       height: ${desktopHeight}px;
     }
-
-    @media (max-width: 1600px) {
-      .container {
-        grid-template-columns: 1fr;
-      }
-    }
   </style>
 </head>
 <body>
   <div class="toolbar">
     <input type="text" class="url-input" id="urlInput" value="${targetUrl}" placeholder="Enter URL...">
+    <span style="color: #999; font-size: 11px; margin-left: 12px;">Click inactive view or press Tab to switch</span>
     <button class="btn" onclick="reloadFrames()">🔄 Reload</button>
     <button class="btn btn-secondary" onclick="rotateDevice()">📱 Rotate</button>
   </div>
 
   <div class="container">
-    <div class="panel">
-      <div class="panel-label">📱 Mobile - iPhone 14 Pro Max</div>
+    <div class="panel active" id="mobilePanel">
+      <div class="panel-label">
+        📱 Mobile - iPhone 14 Pro Max
+        <span class="active-badge">Active</span>
+      </div>
       <div class="frame-wrapper">
         <iframe id="mobileFrame" class="mobile-frame" src="${targetUrl}"></iframe>
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-label">💻 Desktop - MacBook 13"</div>
+    <div class="panel inactive" id="desktopPanel">
+      <div class="panel-label">
+        💻 Desktop - MacBook 13"
+        <span class="active-badge">Active</span>
+      </div>
       <div class="frame-wrapper">
         <iframe id="desktopFrame" class="desktop-frame" src="${targetUrl}"></iframe>
       </div>
@@ -305,7 +364,56 @@ export class PopoutServer {
     const urlInput = document.getElementById('urlInput');
     const mobileFrame = document.getElementById('mobileFrame');
     const desktopFrame = document.getElementById('desktopFrame');
+    const mobilePanel = document.getElementById('mobilePanel');
+    const desktopPanel = document.getElementById('desktopPanel');
     let isRotated = false;
+    let activeView = 'mobile';
+
+    // Switch between views
+    function switchView(view) {
+      if (view === activeView) return;
+      
+      activeView = view;
+      
+      if (view === 'mobile') {
+        mobilePanel.classList.remove('inactive');
+        mobilePanel.classList.add('active');
+        desktopPanel.classList.remove('active');
+        desktopPanel.classList.add('inactive');
+      } else {
+        desktopPanel.classList.remove('inactive');
+        desktopPanel.classList.add('active');
+        mobilePanel.classList.remove('active');
+        mobilePanel.classList.add('inactive');
+      }
+    }
+
+    // Click handlers
+    mobilePanel.addEventListener('click', () => {
+      if (activeView !== 'mobile') {
+        switchView('mobile');
+      }
+    });
+
+    desktopPanel.addEventListener('click', () => {
+      if (activeView !== 'desktop') {
+        switchView('desktop');
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab' && !e.shiftKey) {
+        e.preventDefault();
+        switchView(activeView === 'mobile' ? 'desktop' : 'mobile');
+      }
+      if (e.key === '1') {
+        switchView('mobile');
+      }
+      if (e.key === '2') {
+        switchView('desktop');
+      }
+    });
 
     urlInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -338,12 +446,6 @@ export class PopoutServer {
       newUrl.searchParams.set('url', url);
       window.history.pushState({}, '', newUrl);
     }
-
-    // Auto-reload on changes (for development)
-    let lastModified = Date.now();
-    setInterval(() => {
-      // Optional: implement hot reload detection
-    }, 1000);
   </script>
 </body>
 </html>`;
