@@ -1,7 +1,7 @@
 {
   "name": "dualview",
   "displayName": "DualView Live Preview",
-  "description": "Auto-detect dev servers and preview mobile + desktop views simultaneously with Clerk authentication",
+  "description": "Auto-detect dev servers and preview mobile + desktop views simultaneously",
   "version": "0.1.0",
   "publisher": "dualview",
   "icon": "media/icon.png",
@@ -42,62 +42,52 @@
       {
         "command": "dualview.openLast",
         "title": "DualView: Open Last Preview"
-      },
-      {
-        "command": "dualview.logout",
-        "title": "DualView: Sign Out"
       }
     ],
     "configuration": {
       "title": "DualView Live Preview",
       "properties": {
-        "dualview.clerkPublishableKey": {
-          "type": "string",
-          "default": "",
-          "description": "Clerk Publishable Key (pk_test_... or pk_live_...)",
-          "order": 0
-        },
         "dualview.autoOpenOnUrl": {
           "type": "boolean",
           "default": true,
           "description": "Automatically open DualView when a dev server URL is detected in terminal",
-          "order": 1
+          "order": 0
         },
         "dualview.autoOpenOnProbe": {
           "type": "boolean",
           "default": true,
           "description": "Automatically probe common ports and open DualView when a server is found",
-          "order": 2
+          "order": 1
         },
         "dualview.probe.ports": {
           "type": "array",
           "default": [5173, 3000, 8080, 4200, 5000, 5500, 8000, 8001, 4000, 9000],
           "description": "Ports to probe for auto-detection",
-          "order": 3
+          "order": 2
         },
         "dualview.mobileSize": {
           "type": "string",
           "default": "430x932",
           "description": "Mobile viewport size (widthxheight)",
-          "order": 4
+          "order": 3
         },
         "dualview.desktopSize": {
           "type": "string",
           "default": "1440x900",
           "description": "Desktop viewport size (widthxheight)",
-          "order": 5
+          "order": 4
         },
         "dualview.popout.enable": {
           "type": "boolean",
           "default": true,
           "description": "Enable pop-out in browser feature",
-          "order": 6
+          "order": 5
         },
         "dualview.popout.port": {
           "type": "number",
           "default": 7777,
           "description": "Preferred port for pop-out server (will auto-increment if busy)",
-          "order": 7
+          "order": 6
         }
       }
     }

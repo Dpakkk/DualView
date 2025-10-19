@@ -107,7 +107,10 @@ export class ClerkAuthProvider {
     const config = vscode.workspace.getConfiguration('dualview');
     const clerkPublishableKey = config.get<string>('clerkPublishableKey') || '';
 
-    if (!clerkPublishableKey) {
+    console.log('DualView: Retrieved Clerk key from config:', clerkPublishableKey ? clerkPublishableKey.substring(0, 10) + '...' : 'empty');
+
+    if (!clerkPublishableKey || clerkPublishableKey.trim() === '') {
+      console.log('DualView: No Clerk key configured, showing config error');
       return this.getConfigurationErrorHtml();
     }
 
@@ -126,7 +129,8 @@ export class ClerkAuthProvider {
     let html = fs.readFileSync(loginHtmlPath, 'utf-8');
 
     // Replace placeholder with actual key
-    html = html.replace('CLERK_PUBLISHABLE_KEY_PLACEHOLDER', clerkPublishableKey);
+    console.log('DualView: Replacing placeholder with actual Clerk key');
+    html = html.replace(/CLERK_PUBLISHABLE_KEY_PLACEHOLDER/g, clerkPublishableKey);
 
     return html;
   }

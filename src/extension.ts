@@ -1,63 +1,53 @@
 import * as vscode from 'vscode';
-import { ClerkAuthProvider } from './auth/auth-clerk';
 import { PreviewPanel } from './webview/previewPanel';
 import { ServerDetector } from './detector';
 import { StaticServer } from './server';
 import { isValidUrl } from './util';
 
-let authProvider: ClerkAuthProvider;
 let detector: ServerDetector;
 let statusBarItem: vscode.StatusBarItem;
 let staticServer: StaticServer | undefined;
+let extensionContext: vscode.ExtensionContext;
 
 export async function activate(context: vscode.ExtensionContext) {
-  console.log('DualView Live Preview extension is now active');
+  try {
+    console.log('DualView Live Preview extension is now active');
 
-  // Initialize Clerk auth provider
-  authProvider = new ClerkAuthProvider(context);
+    // Store context globally
+    extensionContext = context;
 
-  // Initialize server detector
-  detector = new ServerDetector(context);
+    // Initialize server detector
+    detector = new ServerDetector(context);
 
-  // Create status bar item
-  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = 'dualview.openLast';
-  statusBarItem.text = '$(device-mobile) DualView';
-  statusBarItem.tooltip = 'Open DualView Live Preview';
-  statusBarItem.show();
-  context.subscriptions.push(statusBarItem);
+    // Create status bar item
+    statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    statusBarItem.command = 'dualview.openLast';
+    statusBarItem.text = '$(device-mobile) DualView';
+    statusBarItem.tooltip = 'Open DualView Live Preview';
+    statusBarItem.show();
+    context.subscriptions.push(statusBarItem);
 
-  // Check authentication on startup
-  const isAuthenticated = await authProvider.isAuthenticated();
-  
-  if (!isAuthenticated) {
-    await promptForLogin();
-  } else {
-    const user = await authProvider.getUser();
-    const userName = user?.firstName || user?.email || 'User';
-    vscode.window.showInformationMessage(`Welcome back to DualView, ${userName}!`);
-    
-    // Start detection after successful auth
+    // Register commands
+    registerCommands(context);
+
+    // Dispose on deactivation
+    context.subscriptions.push(
+      detector,
+      { dispose: () => staticServer?.stop() }
+    );
+
+    // Start server detection immediately
     startServerDetection();
+    
+  } catch (error) {
+    console.error('DualView activation error:', error);
+    vscode.window.showErrorMessage(`DualView failed to activate: ${error}`);
   }
-
-  // Register commands
-  registerCommands(context);
-
-  // Dispose on deactivation
-  context.subscriptions.push(
-    authProvider,
-    detector,
-    { dispose: () => staticServer?.stop() }
-  );
 }
 
 function registerCommands(context: vscode.ExtensionContext) {
   // Main preview command with QuickPick
   const openPreviewCommand = vscode.commands.registerCommand('dualview.openPreview', async () => {
-    if (!(await ensureAuthenticated())) {
-      return;
-    }
 
     const options = [
       {
@@ -101,25 +91,16 @@ function registerCommands(context: vscode.ExtensionContext) {
 
   // Attach to URL command
   const attachUrlCommand = vscode.commands.registerCommand('dualview.attachUrl', async () => {
-    if (!(await ensureAuthenticated())) {
-      return;
-    }
     await attachToManualUrl();
   });
 
   // Serve folder command
   const serveFolderCommand = vscode.commands.registerCommand('dualview.serveFolder', async () => {
-    if (!(await ensureAuthenticated())) {
-      return;
-    }
     await serveCurrentFolder();
   });
 
   // Open last preview command
   const openLastCommand = vscode.commands.registerCommand('dualview.openLast', async () => {
-    if (!(await ensureAuthenticated())) {
-      return;
-    }
 
     const lastUrl = context.workspaceState.get<string>('lastUrl') || 
                     context.globalState.get<string>('lastUrl');
@@ -132,45 +113,12 @@ function registerCommands(context: vscode.ExtensionContext) {
     }
   });
 
-  // Logout command
-  const logoutCommand = vscode.commands.registerCommand('dualview.logout', async () => {
-    await authProvider.logout();
-    detector.stopDetection();
-    PreviewPanel.currentPanel?.dispose();
-    statusBarItem.text = '$(device-mobile) DualView (signed out)';
-  });
-
   context.subscriptions.push(
     openPreviewCommand,
     attachUrlCommand,
     serveFolderCommand,
-    openLastCommand,
-    logoutCommand
+    openLastCommand
   );
-}
-
-async function ensureAuthenticated(): Promise<boolean> {
-  const isAuth = await authProvider.isAuthenticated();
-  if (!isAuth) {
-    await promptForLogin();
-    return await authProvider.isAuthenticated();
-  }
-  return true;
-}
-
-async function promptForLogin(): Promise<void> {
-  const action = await vscode.window.showInformationMessage(
-    'Sign in to use DualView Live Preview',
-    'Sign In',
-    'Cancel'
-  );
-  
-  if (action === 'Sign In') {
-    const success = await authProvider.login();
-    if (success) {
-      startServerDetection();
-    }
-  }
 }
 
 function startServerDetection() {
@@ -264,7 +212,7 @@ async function serveCurrentFolder() {
 }
 
 function openPreview(url: string) {
-  PreviewPanel.createOrShow(authProvider['context'], url);
+  PreviewPanel.createOrShow(extensionContext, url);
   statusBarItem.text = `$(device-mobile) DualView: ${new URL(url).port}`;
 }
 

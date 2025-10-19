@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://cdn.jsdelivr.net 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; connect-src https://*.clerk.accounts.dev https://*.clerk.com; img-src https: data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://cdn.jsdelivr.net https://*.clerk.accounts.dev https://*.clerk.com 'unsafe-inline' 'unsafe-eval'; style-src https: 'unsafe-inline'; connect-src https://*.clerk.accounts.dev https://*.clerk.com https://api.clerk.com; img-src https: data: blob:; frame-src https://*.clerk.accounts.dev https://*.clerk.com;">
   <title>Sign In - DualView</title>
   <style>
     * {
@@ -139,7 +139,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js" crossorigin="anonymous"></script>
   <script>
     (function() {
       const vscode = acquireVsCodeApi();
@@ -147,15 +147,25 @@
       async function initializeClerk() {
         const clerkPublishableKey = 'CLERK_PUBLISHABLE_KEY_PLACEHOLDER';
         
+        console.log('Initializing Clerk with key:', clerkPublishableKey ? clerkPublishableKey.substring(0, 10) + '...' : 'undefined');
+        
         // Check if key is configured
         if (!clerkPublishableKey || !clerkPublishableKey.startsWith('pk_')) {
+          console.error('Invalid Clerk key:', clerkPublishableKey);
           showConfigError();
           return;
         }
 
         try {
-          const clerk = window.Clerk;
-          await clerk.load({ publishableKey: clerkPublishableKey });
+          // Wait for Clerk to be available
+          if (!window.Clerk) {
+            throw new Error('Clerk library failed to load. Please check your internet connection.');
+          }
+
+          console.log('Creating Clerk instance...');
+          const clerk = new window.Clerk(clerkPublishableKey);
+          console.log('Loading Clerk...');
+          await clerk.load();
 
           // Check if already signed in
           if (clerk.user) {
@@ -229,11 +239,30 @@
         vscode.postMessage({ command: 'authError', error: 'Clerk key not configured' });
       }
 
+      // Wait for both DOM and Clerk script to be ready
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds timeout
+
+      function waitForClerk() {
+        attempts++;
+        
+        if (window.Clerk) {
+          initializeClerk();
+        } else if (attempts >= maxAttempts) {
+          document.getElementById('clerk-sign-in').innerHTML = 
+            '<div class="error"><strong>Loading Failed</strong><br>' + 
+            'Unable to load authentication. Please check your internet connection and try again.</div>';
+          vscode.postMessage({ command: 'authError', error: 'Clerk script failed to load' });
+        } else {
+          setTimeout(waitForClerk, 100);
+        }
+      }
+
       // Initialize when DOM is ready
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeClerk);
+        document.addEventListener('DOMContentLoaded', waitForClerk);
       } else {
-        initializeClerk();
+        waitForClerk();
       }
     })();
   </script>
