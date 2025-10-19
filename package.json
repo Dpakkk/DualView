@@ -4,7 +4,7 @@
   "description": "Auto-detect dev servers and preview mobile + desktop views simultaneously with Clerk authentication",
   "version": "0.1.0",
   "publisher": "dualview",
-  "icon": "media/icon.svg",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
