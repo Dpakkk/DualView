@@ -29,7 +29,6 @@ A VS Code extension that automatically detects local development servers and dis
 - Required login before using any features
 - Secure session storage using VS Code secrets API
 - Persistent authentication across restarts
-- Modern UI with Clerk.js components
 
 ### Pop-out to Browser
 - Opens identical dual-view in external browser
