@@ -151,7 +151,18 @@ export class PreviewPanel {
   }
 
   private getWebviewHtml(): string {
-    const htmlPath = path.join(this.context.extensionPath, 'src', 'webview', 'dualview.html');
+    // Try src first for development, then packaged location
+    let htmlPath = path.join(this.context.extensionPath, 'src', 'webview', 'dualview.html');
+    
+    if (!fs.existsSync(htmlPath)) {
+      // Fallback to packaged location
+      htmlPath = path.join(this.context.extensionPath, 'out', 'webview', 'dualview.html');
+    }
+
+    if (!fs.existsSync(htmlPath)) {
+      return this.getErrorHtml('DualView template file not found. Please reinstall the extension.');
+    }
+
     let html = fs.readFileSync(htmlPath, 'utf-8');
 
     // Get viewport sizes from config
@@ -166,6 +177,40 @@ export class PreviewPanel {
     html = html.replace(/height:\s*900px/g, `height: ${desktopSize.height}px`);
 
     return html;
+  }
+
+  private getErrorHtml(message: string): string {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #1e1e1e;
+      color: #cccccc;
+    }
+    .error-container {
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #f48771;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <h1>⚠️ Error</h1>
+    <p>${message}</p>
+  </div>
+</body>
+</html>`;
   }
 }
 
