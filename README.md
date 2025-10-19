@@ -1,68 +1,68 @@
 # DualView Live Preview
 
-> **Production-quality VS Code extension** that auto-detects local dev servers and displays synchronized mobile + desktop preview with Clerk authentication.
+A VS Code extension that automatically detects local development servers and displays synchronized mobile and desktop previews with Clerk authentication.
 
 ![Version](https://img.shields.io/badge/version-0.1.0-blue)
 ![VS Code](https://img.shields.io/badge/VS%20Code-1.85.0%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 🚀 Features
+## Features
 
-### 📱 Dual Viewport Preview
+### Dual Viewport Preview
 - **Mobile**: iPhone 14 Pro Max (430×932px)
 - **Desktop**: MacBook 13" (1440×900px)
 - **Synchronized**: Both views load the same URL simultaneously
 - **Configurable**: Customize viewport sizes in settings
 
-### 🔍 Auto-Detection
+### Auto-Detection
 - **Terminal Monitoring**: Detects dev server URLs from terminal output patterns
 - **Port Probing**: Automatically scans common development ports
 - **Task Integration**: Hooks into VS Code tasks to detect "dev" commands
 - **Smart Prompting**: Shows notification when a server is detected
 
-### 🌐 Multiple Attach Modes
+### Multiple Attach Modes
 1. **Auto-detect** - Scan common ports (5173, 3000, 8080, etc.)
 2. **Manual URL** - Enter any localhost/127.0.0.1 URL
 3. **Static Server** - Serve current folder as static files
 
-### 🔐 Clerk Authentication
-- **Required login** before using any features
-- **Secure session** storage using VS Code secrets API
-- **Persistent auth** across restarts
-- **Modern UI** with Clerk.js components
+### Clerk Authentication
+- Required login before using any features
+- Secure session storage using VS Code secrets API
+- Persistent authentication across restarts
+- Modern UI with Clerk.js components
 
-### 🌍 Pop-out to Browser
+### Pop-out to Browser
 - Opens identical dual-view in external browser
 - Runs mini HTTP server for pop-out functionality
 - Perfect for multi-monitor setups
 - Customizable port configuration
 
-## 📦 Installation
+## Installation
 
 ### From VS Code Marketplace
 1. Open VS Code
 2. Go to Extensions (`Cmd+Shift+X` / `Ctrl+Shift+X`)
 3. Search for "DualView Live Preview"
-4. Click **Install**
+4. Click Install
 
 ### From VSIX
 ```bash
 code --install-extension dualview-0.1.0.vsix
 ```
 
-## 🔧 Setup
+## Setup
 
 ### 1. Configure Clerk Authentication
 
 **Get your Clerk Publishable Key:**
 1. Sign up at [Clerk Dashboard](https://dashboard.clerk.com)
 2. Create a new application
-3. Go to **API Keys**
-4. Copy your **Publishable Key** (starts with `pk_test_` or `pk_live_`)
+3. Go to API Keys
+4. Copy your Publishable Key (starts with `pk_test_` or `pk_live_`)
 
 **Add to VS Code Settings:**
 
-Open Settings (`Cmd/Ctrl + ,`) → Search "DualView" → Paste key into:
+Open Settings (`Cmd/Ctrl + ,`) and search for "DualView", then paste your key:
 ```json
 {
   "dualview.clerkPublishableKey": "pk_test_YOUR_KEY_HERE"
@@ -74,7 +74,7 @@ Open Settings (`Cmd/Ctrl + ,`) → Search "DualView" → Paste key into:
 - Complete Clerk authentication flow
 - Stay signed in across VS Code restarts
 
-## 🎯 Usage
+## Usage
 
 ### Auto-Detection (Recommended)
 1. Start your dev server normally:
@@ -85,8 +85,8 @@ Open Settings (`Cmd/Ctrl + ,`) → Search "DualView" → Paste key into:
    ng serve          # Angular
    ```
 2. DualView automatically detects the server
-3. Click **"Open DualView"** in the notification
-4. Preview opens instantly!
+3. Click "Open DualView" in the notification
+4. Preview opens instantly
 
 ### Manual Commands
 
@@ -99,9 +99,9 @@ Open Settings (`Cmd/Ctrl + ,`) → Search "DualView" → Paste key into:
 | `DualView: Sign Out` | Sign out of Clerk |
 
 ### Status Bar
-Click the 📱 **DualView** status bar button to quickly reopen last preview.
+Click the DualView status bar button to quickly reopen last preview.
 
-## ⚙️ Configuration
+## Configuration
 
 ```jsonc
 {
@@ -139,28 +139,28 @@ DualView automatically detects servers from:
 | Rails | 3000 | `Listening on http://localhost:3000` |
 | Express | 3000+ | Custom ports |
 
-## 🎨 Features in Detail
+## Features in Detail
 
 ### Toolbar Actions
-- **📝 URL Input**: Edit and navigate to any localhost URL
-- **🔄 Reload**: Refresh both frames simultaneously
-- **📱 Rotate**: Toggle mobile orientation (portrait ↔ landscape)
-- **🌐 Pop Out**: Open in external browser
+- **URL Input**: Edit and navigate to any localhost URL
+- **Reload**: Refresh both frames simultaneously
+- **Rotate**: Toggle mobile orientation (portrait and landscape)
+- **Pop Out**: Open in external browser
 
 ### Auto-Detection Strategy
-1. **Task Hook**: Detects when "dev"/"serve"/"start" tasks run
+1. **Task Hook**: Detects when "dev", "serve", or "start" tasks run
 2. **Port Probe**: Checks common ports every 2s (500ms when task starts)
 3. **Terminal Monitor**: Watches for new terminal creation
 4. **Smart Prompting**: Only prompts once per detected URL
 
 ### Security Features
-- ✅ Clerk authentication required
-- ✅ Session tokens encrypted in VS Code secrets
-- ✅ Only publishable keys used (no secret keys)
-- ✅ CSP restrictions on webviews
-- ✅ Localhost/127.0.0.1 only for iframes
+- Clerk authentication required
+- Session tokens encrypted in VS Code secrets
+- Only publishable keys used (no secret keys)
+- CSP restrictions on webviews
+- Localhost/127.0.0.1 only for iframes
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 src/
@@ -176,7 +176,7 @@ src/
     └── previewPanel.ts       # Webview panel manager
 ```
 
-## 🔬 Development
+## Development
 
 ### Prerequisites
 - Node.js 18+
@@ -218,65 +218,55 @@ npm run package
 npm run publish
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### "Configuration Required" Error
-→ Add your Clerk publishable key to settings
+Add your Clerk publishable key to settings.
 
 ### Server Not Detected
-→ Manually use `DualView: Attach to URL`
-→ Check that port is in `dualview.probe.ports` setting
+Manually use `DualView: Attach to URL` or check that the port is listed in `dualview.probe.ports` setting.
 
 ### Pop-out Not Working
-→ Check firewall allows localhost connections
-→ Try different port in `dualview.popout.port`
+Check that your firewall allows localhost connections or try a different port in `dualview.popout.port`.
 
 ### Authentication Issues
-→ Verify Clerk key is valid
-→ Try signing out and back in
-→ Check Clerk dashboard for application status
+Verify your Clerk key is valid, try signing out and back in, or check Clerk dashboard for application status.
 
-## 📝 Limitations
+## Limitations
 
 - **Terminal Output**: VS Code API doesn't expose terminal stdout, so detection relies on port probing and task hooks
 - **Localhost Only**: For security, only localhost/127.0.0.1 URLs are supported in iframes
 - **HTTPS Servers**: May require additional CORS configuration
 
-## 🤝 Contributing
+## Contributing
 
-Contributions welcome! Please:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+Contributions are welcome. Please fork the repository, create a feature branch, make your changes, and submit a pull request.
 
-## 📄 License
+## License
 
 MIT License - see LICENSE file
 
-## 🙏 Credits
+## Credits
 
 - **Clerk**: Authentication platform ([clerk.com](https://clerk.com))
 - **VS Code**: Extension APIs
 - **Community**: Feedback and contributions
 
-## 📞 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/dualview/issues)
 - **Docs**: [Clerk Documentation](https://clerk.com/docs)
 - **VS Code**: [Extension API Docs](https://code.visualstudio.com/api)
 
-## 🗺️ Roadmap
+## Roadmap
 
-- [ ] More device presets (iPad, Pixel, etc.)
-- [ ] Custom viewport sizes per workspace
-- [ ] Screenshot capture
-- [ ] Network throttling simulation
-- [ ] DevTools integration
-- [ ] Multi-URL comparison mode
+- More device presets (iPad, Pixel, etc.)
+- Custom viewport sizes per workspace
+- Screenshot capture
+- Network throttling simulation
+- DevTools integration
+- Multi-URL comparison mode
 
 ---
 
-**Made with ❤️ for developers who love responsive design**
-
-Star ⭐ this repo if you find it useful!
+Built for developers who care about responsive design.
